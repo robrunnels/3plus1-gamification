@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>You+3 by GOLF+</title>
+<!--
+  YOU+3 by GOLF+ (working title) : build-your-dream-foursome
+  Single file, no backend, deterministic. Parody brands intentional (closed-link demo).
+
+  ROB'S EDITING GUIDE
+  1. To add a celebrity: copy any block in CELEBS, change the name, five scores
+     (exactly one 5 or one 1 per celeb, that is their signature), wing, decade
+     (PREWAR/MIDCENTURY/RETRO/Y2K/MODERN), pol/lm flags, card hook, and two "ev"
+     event lines for the recap. That is the whole job.
+  2. To tune tone: everything the recap can say lives in RECAP_LIB and each celeb's "ev".
+  3. To tune matching feel: CONFIG knobs below, all commented.
+  4. To rename the game: CONFIG.title.
+-->
+<style>
+:root{
+  --green:#123B23; --green2:#1F4E2C; --cream:#F6F1E5; --card:#FFFFFF;
+  --gold:#C9A227; --ink:#1C2620; --sub:#5B6B60; --line:#E3DCC9; --red:#B33A2B;
+}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+body{background:var(--green); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  min-height:100vh; display:flex; justify-content:center;}
+#app{width:100%; max-width:480px; min-height:100vh; background:var(--cream); margin:0 auto;
+  display:flex; flex-direction:column; box-shadow:0 0 60px rgba(0,0,0,.35);}
+.screen{padding:22px 18px 36px; animation:fade .35s ease; flex:1; display:flex; flex-direction:column;}
+@keyframes fade{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+.brand{font-weight:800; letter-spacing:.14em; font-size:12px; color:var(--green2); text-transform:uppercase;}
+h1{font-size:44px; line-height:1.02; color:var(--green); font-weight:900; letter-spacing:-.02em; margin:10px 0 6px;}
+h2{font-size:24px; color:var(--green); font-weight:850; margin-bottom:6px; letter-spacing:-.01em;}
+.sub{color:var(--sub); font-size:15px; line-height:1.45;}
+.btn{display:block; width:100%; border:none; border-radius:14px; padding:16px;
+  font-size:17px; font-weight:750; cursor:pointer; margin-top:14px;
+  background:var(--green); color:var(--cream); transition:transform .06s ease;}
+.btn:active{transform:scale(.985);}
+.btn.gold{background:var(--gold); color:var(--green);}
+.btn.ghost{background:transparent; color:var(--green2); border:2px solid var(--green2);}
+.btn:disabled{opacity:.35; cursor:not-allowed;}
+.meter{position:sticky; top:0; z-index:5; background:var(--cream); padding:10px 0 8px; border-bottom:2px solid var(--line);}
+.meter .row{display:flex; justify-content:space-between; align-items:baseline;}
+.meter b{font-size:26px; color:var(--green);}
+.meter .tag{font-size:12px; color:var(--sub); font-weight:600;}
+.cat{margin-top:18px;}
+.cat h3{font-size:15px; color:var(--green2); text-transform:uppercase; letter-spacing:.08em;}
+.cat .why{font-size:12.5px; color:var(--sub); margin:2px 0 8px;}
+.opts{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+.opt{border:2px solid var(--line); background:var(--card); border-radius:12px;
+  padding:10px 10px 9px; cursor:pointer; text-align:left; font-size:14px; font-weight:650; color:var(--ink);
+  display:flex; justify-content:space-between; align-items:center; gap:6px; transition:border-color .12s;}
+.opt .price{font-size:12px; font-weight:800; color:var(--green2); background:var(--cream);
+  border-radius:8px; padding:3px 7px; white-space:nowrap;}
+.opt.sel{border-color:var(--green); background:#EAF2EB;}
+.opt.legend{border-color:var(--gold);}
+.opt.legend .price{background:var(--gold); color:var(--green);}
+.opt:disabled{opacity:.35; cursor:not-allowed;}
+.legendtag{font-size:10px; font-weight:800; letter-spacing:.1em; color:var(--gold); text-transform:uppercase; display:block;}
+.q-progress{display:flex; gap:6px; margin-bottom:18px;}
+.q-progress i{flex:1; height:4px; border-radius:2px; background:var(--line);}
+.q-progress i.on{background:var(--green);}
+.scale{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:18px 0 10px;}
+.scale button{border:2px solid var(--line); background:var(--card); border-radius:12px; padding:16px 0;
+  font-size:18px; font-weight:800; color:var(--green2); cursor:pointer;}
+.scale button:active{border-color:var(--green); background:#EAF2EB;}
+.anchors{display:flex; justify-content:space-between; gap:14px;}
+.anchors span{font-size:12.5px; color:var(--sub); line-height:1.35; max-width:46%;}
+.anchors span:last-child{text-align:right;}
+.mc .opt{margin-bottom:8px; width:100%; padding:14px 12px;}
+.mc{display:block;}
+.reveal{display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; text-align:center;}
+.spinner{width:54px; height:54px; border-radius:50%; border:5px solid var(--line); border-top-color:var(--green); animation:spin 1s linear infinite; margin-bottom:18px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.fcard{background:var(--card); border-radius:16px; padding:14px 14px 12px; margin-top:10px;
+  border:2px solid var(--line); box-shadow:0 3px 14px rgba(18,59,35,.07); animation:fade .4s ease both;}
+.fcard .wing{font-size:10.5px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:var(--cream);
+  background:var(--green2); border-radius:7px; padding:3px 8px; display:inline-block;}
+.fcard .wing.Presidents{background:var(--red);} .fcard .wing.Legends{background:var(--gold); color:var(--green);}
+.fcard .wing.Athletes{background:#2B5D8C;} .fcard .wing.Entertainers{background:#6C4A8C;}
+.fcard h3{font-size:21px; color:var(--green); margin:7px 0 3px; letter-spacing:-.01em;}
+.fcard p{font-size:13.5px; color:var(--sub); line-height:1.4;}
+.fcard.you{border-color:var(--green); background:#EAF2EB;}
+.fcard.lebron{border-color:var(--gold); background:#FFF9E8; position:relative;}
+.fcard.lebron::before{content:"UNINVITED"; position:absolute; top:-9px; right:12px; background:var(--gold);
+  color:var(--green); font-size:10px; font-weight:900; letter-spacing:.1em; padding:2px 8px; border-radius:6px;}
+.recap{background:var(--card); border:2px solid var(--line); border-radius:16px; padding:16px; margin-top:16px;}
+.recap h4{font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--green2); margin-bottom:8px;}
+.recap p{font-size:15px; line-height:1.6;}
+.rating{font-size:34px; font-weight:900; color:var(--green); margin-top:10px;}
+.coach{font-size:12.5px; color:var(--sub); margin-top:12px; text-align:center;}
+.foot{font-size:11px; color:var(--sub); text-align:center; margin-top:22px; opacity:.8;}
+.toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--green);
+  color:var(--cream); padding:10px 18px; border-radius:12px; font-size:14px; font-weight:650; opacity:0; transition:opacity .25s; pointer-events:none;}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// [ENGINE-START]
+"use strict";
+
+/* ============================== CONFIG (tuning knobs) ============================== */
+const CONFIG = {
+  title: "You+3 by GOLF+",            // working title, rename here
+  budget: 14,                          // total points (was 13, Rob's playtest call July 2026)
+  wBudget: 0.6, wQuiz: 0.4,            // trust spend more than claims
+  athWeightPlay: 1.5,                  // Q3 "play" multiplies ATH axis weight
+  decadeBonus: 0.6,                    // distance discount for matching decade vibe
+  jitter: 0.25,                        // deterministic tie-breaking texture
+};
+const AXES = ["EAG","STY","ENT","ATH","COM"];
+
+/* ============================== BUDGET CATEGORIES ==============================
+   Prices 1-4 map to axis targets 1-5. Legend tier (7) maxes the axis. */
+const CATEGORIES = [
+  {ax:"EAG", name:"Golf Instructor", why:"Eagerness. How badly you want to get better.",
+   opts:[["Box Store Bob",1],["Albert Zapata",2],["Tim Cup",3],["Local Golf Pro",4],
+         ["Butch Harmon",7,"legend"],["John Daly",7,"legend"]]},
+  {ax:"STY", name:"Clothes", why:"Style. What walks up to the first tee.",
+   opts:[["Costgo",1],["Big Mouth",2],["Airness",3],["Malborn",4]]},
+  {ax:"ENT", name:"Course", why:"Entertainment. Where the day happens.",
+   opts:[["Sharkstown",1],["Margarita-land",2],["Gravel Beach",3],["The Oldest Course",4]]},
+  {ax:"ATH", name:"Transport", why:"Athleticism. How you move for 18 holes.",
+   opts:[["Carrying",1],["Push Cart",2],["Golf Cart",3],["Golf Board",4]]},
+  {ax:"COM", name:"Clubs", why:"Commitment. What is in the bag.",
+   opts:[["PowerfulXtremeGolf",1],["Ding",2],["TaylorFade",3],["Title-gist",4]]},
+];
+
+/* ============================== QUESTIONS ============================== */
+const QUESTIONS = [
+  {id:"decade", type:"mc", q:"Which decade do you wish you lived in?",
+   opts:[["The 1920s, borrowed time and hickory shafts","PREWAR"],
+         ["The 50s and 60s, when everything was a lounge","MIDCENTURY"],
+         ["The 70s and 80s, louder pants, better mustaches","RETRO"],
+         ["The 90s and 2000s, the last normal decade","Y2K"],
+         ["Right now, golf has never been better","MODERN"]]},
+  {id:"politics", type:"mc", q:"Do you talk politics during a round?",
+   opts:[["Never, golf is the escape","never"],
+         ["If somebody else starts it, sure","sometimes"],
+         ["By hole 6 I have delivered a full stump speech","always"]]},
+  {id:"playwatch", type:"mc", q:"Would you rather play golf or watch it?",
+   opts:[["Play, obviously","play"],["Watch, honestly. The couch is undefeated.","watch"]]},
+  {id:"turn", type:"mc", q:"What are you getting at the turn?",
+   opts:[["Water","water"],["Banana and trail mix","banana"],
+         ["Hotdog and chips","hotdog"],["All the beer they have","beer"]]},
+  {id:"EAG", type:"scale", q:"It is 11pm. A video titled FIX YOUR SLICE IN FOUR MINUTES appears in your feed. Odds you watch it?",
+   lo:"Asleep. Slices heal on their own.", hi:"Watched it twice, then shadow-swung a spatula in the kitchen."},
+  {id:"STY", type:"scale", q:"When was your first-tee outfit decided?",
+   lo:"In the parking lot, from the trunk, some of it damp.", hi:"Tuesday. There is a backup fit in case of rain."},
+  {id:"ENT", type:"scale", q:"How loud is your ideal golf cart?",
+   lo:"Birdsong, spikes on the path, respectful silence.", hi:"Speaker at full send, someone narrating, the marshal knows us by name."},
+  {id:"ATH", type:"scale", q:"Your buddy suggests walking 36 tomorrow. Be honest.",
+   lo:"I got tired reading this question.", hi:"Carrying our bags, and we are jogging the front nine."},
+  {id:"COM", type:"scale", q:"How many new clubs have you bought in the last five years?",
+   lo:"None. The set is a hand-me-down and we are loyal to each other.", hi:"The garage looks like a demo day, and there is a putter drawer we do not open."},
+  {id:"chirp", type:"scale", q:"Mid-backswing, your buddy whispers 'don't miss.' What happens next?",
+   lo:"We are no longer friends, and I am keeping the twenty he owes me.",
+   hi:"I finish the swing and chirp back louder. This is the game within the game."},
+];
+
+/* ============================== THE ROSTER (49 + LeBron) ==============================
+   v = [EAG, STY, ENT, ATH, COM]. hook = results-card line. ev = recap event lines. */
+const CELEBS = [
+// ---- INVESTOR WING ----
+{n:"Jordan Spieth", w:"Investors", v:[5,3,3,4,4], dec:"MODERN", hook:"Has full conversations with his golf ball, and the ball listens.",
+ ev:["Jordan Spieth had a full conversation with his ball on 7. The ball listened. Birdie.",
+     "Jordan Spieth yelled 'go get that' at a drive that was, frankly, already gotten."]},
+{n:"Steph Curry", w:"Investors", v:[4,4,3,5,4], dec:"MODERN", hook:"Legit scratch. Do not give him strokes.",
+ ev:["Steph Curry made a 45-footer on 9 and walked it in like a tunnel three.",
+     "Steph Curry handed out Warriors tickets mid-round, then quietly shot 74."]},
+{n:"Mike Trout", w:"Investors", v:[5,2,2,4,4], dec:"MODERN", hook:"400 yards or a 40-yard duck hook. Nothing in between.",
+ ev:["Mike Trout hit one drive 400 yards and the next one 40. No in-between, as advertised.",
+     "Mike Trout checked the radar at the turn and called the back-nine wind to the minute."]},
+{n:"Rory McIlroy", w:"Investors", v:[4,3,2,5,4], dec:"MODERN", hook:"Fastest hips in golf. Will explain the physics unprompted.",
+ ev:["Rory McIlroy explained spin loft to the beverage cart driver, who was, to her credit, riveted.",
+     "Rory McIlroy lost the front-nine press and did not speak again until 12."]},
+{n:"Ben Crenshaw", w:"Investors", v:[5,2,3,2,4], dec:"RETRO", hook:"Gentle Ben. Reads greens like scripture.",
+ ev:["Ben Crenshaw read a triple-breaker for you like scripture and teared up when it dropped.",
+     "Ben Crenshaw told an Augusta story on 16 that made the marshal sit down to listen."]},
+{n:"Tom Brady", w:"Investors", v:[4,3,2,3,5], dec:"Y2K", hook:"TB12 protocol on the cart. Still processing The Match.",
+ ev:["Tom Brady offered everyone avocado ice cream at the turn. There were no takers, and one new enemy.",
+     "Tom Brady hydrated on a schedule and mentioned The Match twice, unprompted, with a distant look."]},
+// ---- ATHLETES ----
+{n:"Charles Barkley", w:"Athletes", v:[3,2,5,3,2], dec:"Y2K", lm:1, hook:"The hitch is gone, he swears. Bets on everything.",
+ ev:["Charles Barkley bet $100 on cart speed, lost, and paid in singles for comedic effect.",
+     "Charles Barkley's hitch returned on 4. He swore on live television it was gone. It was not."]},
+{n:"Larry Fitzgerald", w:"Athletes", v:[4,5,3,4,3], dec:"MODERN", hook:"Golf's great diplomat. Best-dressed man at any club.",
+ ev:["Larry Fitzgerald diplomatically settled a rules dispute he was not even involved in.",
+     "Larry Fitzgerald was the best-dressed man on the property and never once mentioned it."]},
+{n:"Michael Jordan", w:"Athletes", v:[4,4,4,3,5], dec:"Y2K", hook:"$1,000 Nassau minimum. Takes bad bounces personally.",
+ ev:["Michael Jordan raised the Nassau to numbers that made the caddies nervous.",
+     "Michael Jordan took a cart-path bounce personally and birdied the next three holes about it."]},
+{n:"Tony Romo", w:"Athletes", v:[4,3,5,4,3], dec:"MODERN", hook:"Calls your shot before you hit it. He's right.",
+ ev:["Tony Romo called your approach's exact distance before you swung. He was right, which was worse.",
+     "Tony Romo made a 70-footer casually and apologized for it, which somehow made it worse."]},
+{n:"Wayne Gretzky", w:"Athletes", v:[3,3,3,5,3], dec:"RETRO", hook:"Will not bring up his son-in-law. You will.",
+ ev:["Wayne Gretzky apologized to his ball twice and never once mentioned his son-in-law. You did.",
+     "Wayne Gretzky tried to hit a fade on 11 and physically could not. Hockey wrists."]},
+{n:"Shaquille O'Neal", w:"Athletes", v:[3,4,4,1,2], dec:"Y2K", lm:1, hook:"Standard clubs look like toothpicks in his hands.",
+ ev:["Shaq's driver looked like a toothpick and his drive looked like a rumor.",
+     "Shaq commandeered the beverage cart on 6 and ran it like a small business."]},
+{n:"Serena Williams", w:"Athletes", v:[4,4,2,5,3], dec:"MODERN", hook:"Took up golf casually. Accidentally became good. Typical.",
+ ev:["Serena Williams went match-point mode over a two-footer and everyone instinctively went quiet.",
+     "Serena Williams picked up golf casually and out-drove half the group. Typical."]},
+// ---- PRESIDENTS (politics-gated) ----
+{n:"Lyndon B. Johnson", w:"Presidents", v:[1,2,4,2,2], dec:"MIDCENTURY", pol:1, lm:1, hook:"Counts a mulligan as a gimme. The Johnson Treatment is real.",
+ ev:["LBJ counted a mulligan as a gimme and dared the group to file a complaint.",
+     "LBJ gave you the Johnson Treatment over a four-footer. You made it out of self-preservation."]},
+{n:"Calvin Coolidge", w:"Presidents", v:[2,3,1,2,3], dec:"PREWAR", pol:1, hook:"Says four words all round. Somehow up two holes.",
+ ev:["Calvin Coolidge said four words all round. Two were 'nice putt.' He was up two holes at the time.",
+     "Calvin Coolidge won three holes in complete silence, which everyone agreed was terrifying."]},
+{n:"George W. Bush", w:"Presidents", v:[1,3,4,4,2], dec:"Y2K", pol:1, hook:"18 holes in 2 hours 40. You have a nickname now.",
+ ev:["George W. Bush played his 18 in 2 hours 40 and nicknamed your slice 'Ol' Faithful.'",
+     "George W. Bush reminded everyone he quit golf in 2003, then out-paced the entire group."]},
+{n:"Bill Clinton", w:"Presidents", v:[3,3,4,2,1], dec:"Y2K", pol:1, hook:"Invented the Billigan. Takes three off the first tee.",
+ ev:["Bill Clinton took a Billigan on 1, another on 9, and told a story so good nobody objected.",
+     "Bill Clinton had McDonald's waiting at the turn and did not share the fries."]},
+{n:"John F. Kennedy", w:"Presidents", v:[3,5,3,4,2], dec:"MIDCENTURY", pol:1, hook:"Smoothest swing of any president. Hid it on purpose.",
+ ev:["JFK swung so smoothly on 3 that the group went quiet. He asked everyone to keep it off camera.",
+     "JFK outdrove you with a bad back and full presidential posture."]},
+{n:"William Taft", w:"Presidents", v:[4,2,3,1,4], dec:"PREWAR", pol:1, hook:"First golf president. Ate all the hotdogs at the turn.",
+ ev:["William Taft ate all the hotdogs at the turn. All of them. The staff restocked and he circled back.",
+     "William Taft's two caddies deployed his personal chair on every tee box with military precision."]},
+// ---- ENTERTAINERS ----
+{n:"Larry the Cable Guy", w:"Entertainers", v:[2,1,4,2,3], dec:"Y2K", lm:1, hook:"Git-R-Done on every tee shot. Surprisingly tidy short game.",
+ ev:["Larry the Cable Guy said Git-R-Done on all 18 tee shots and got up and down from everywhere.",
+     "Larry the Cable Guy's sleeveless flannel summoned the marshal, who decided the paperwork was not worth it."]},
+{n:"Larry David", w:"Entertainers", v:[4,2,4,1,3], dec:"Y2K", hook:"Prettaay, prettaay good round. Will litigate the scorecard.",
+ ev:["Larry David litigated a scorecard dispute for three holes and won on appeal.",
+     "Larry David called the round prettaay, prettaay good, the highest rating he has ever given anything."]},
+{n:"Celine Dion", w:"Entertainers", v:[3,5,3,2,4], dec:"Y2K", hook:"Owned her own golf course. Will mention it.",
+ ev:["Celine Dion mentioned owning her own golf course, twice, with escalating volume.",
+     "Celine Dion held a note through your entire backswing on 12. The drive was perfect. Nobody can explain it."]},
+{n:"Bill Murray", w:"Entertainers", v:[3,2,5,2,3], dec:"RETRO", hook:"Caddyshack rules in effect. May vanish around 14.",
+ ev:["Bill Murray vanished around 14 and returned on 17 with churros and no explanation.",
+     "Bill Murray whispered Cinderella story from every bunker, including yours."]},
+{n:"Matthew McConaughey", w:"Entertainers", v:[1,4,4,3,2], dec:"Y2K", hook:"Does not keep score. Finds it limiting.",
+ ev:["Matthew McConaughey played holes 5 through 7 barefoot and called your scorecard limiting.",
+     "Matthew McConaughey said alright alright alright on the first tee and never wrote down a number."]},
+{n:"George Clooney", w:"Entertainers", v:[3,5,4,2,3], dec:"MIDCENTURY", hook:"Runs one elaborate prank per round. Reveal on 18.",
+ ev:["George Clooney ran a prank the entire round and revealed it on 18. Your headcover is a chicken now.",
+     "Casamigos appeared at the turn. Nobody ordered it. George Clooney smiled like a man with a receipt."]},
+{n:"Michael Buble", w:"Entertainers", v:[1,4,4,2,3], dec:"MIDCENTURY", hook:"Dressed for 1958 on purpose. Croons through backswings.",
+ ev:["Michael Buble crooned through your backswing on 8. You hit it pure out of spite.",
+     "Michael Buble ordered a Manhattan at the turn window and tipped like it was 1958."]},
+{n:"Justin Bieber", w:"Entertainers", v:[5,4,3,4,2], dec:"MODERN", hook:"Three swing thoughts per shot. Shares all of them.",
+ ev:["Justin Bieber shared three swing thoughts per shot. They are all yours now.",
+     "Justin Bieber posted your duff to 290 million people. It has a sound now."]},
+{n:"Ray Romano", w:"Entertainers", v:[3,1,4,2,2], dec:"Y2K", hook:"Trying to break 80 since 1999. Narrates the collapse.",
+ ev:["Ray Romano narrated his own collapse in real time, hole by hole, in the third person.",
+     "Ray Romano needed 39 on the back to break 80 and shot 40. The quest continues, as it has since 1999."]},
+{n:"Samuel L. Jackson", w:"Entertainers", v:[3,4,4,2,5], dec:"Y2K", lm:1, hook:"Golf clause in every film contract. Language not included.",
+ ev:["Samuel L. Jackson described your slice using words this recap is legally unable to reproduce.",
+     "Samuel L. Jackson's Kangol program stayed matching through all 18. Committed."]},
+{n:"Adam Sandler", w:"Entertainers", v:[3,1,4,3,3], dec:"Y2K", hook:"Basketball shorts, hoodie, ready to golf.",
+ ev:["Adam Sandler attempted the run-up drive on 18. Contact was made. Witnesses disagree on everything else.",
+     "Adam Sandler played in basketball shorts and gave the beverage cart staff producer credits."]},
+{n:"Will Ferrell", w:"Entertainers", v:[2,3,5,3,2], dec:"Y2K", lm:1, hook:"Commits to a bit for 18 holes straight.",
+ ev:["Will Ferrell committed to a Welsh accent on the back nine and never once broke.",
+     "Will Ferrell announced your backswing like a nature documentary, loudly, from four feet away."]},
+{n:"Tom Hanks", w:"Entertainers", v:[2,3,3,3,1], dec:"MIDCENTURY", hook:"Rental clubs. Apologizes to them individually.",
+ ev:["Tom Hanks apologized to his rental clubs individually and yelled WILSON at the pond on 8.",
+     "Tom Hanks knew every marshal by first name, which saved the group at least twice."]},
+{n:"Kenny G", w:"Entertainers", v:[5,3,2,3,4], dec:"RETRO", hook:"Plays to a plus handicap. Do not bet him.",
+ ev:["Kenny G shot 71 and you never saw it coming. The ponytail did not move all day.",
+     "Kenny G warmed up with circular breathing and then quietly took everyone's money."]},
+{n:"Snoop Dogg", w:"Entertainers", v:[2,5,4,2,2], dec:"Y2K", hook:"Personalized cart. Hydraulics. Smoke delay on the tee.",
+ ev:["Snoop's cart had hydraulics and a smoke delay on the tee box. The marshal declined to intervene.",
+     "Snoop kept his mind on his short game and his short game on his mind. Up and down from everywhere."]},
+{n:"Bob Dylan", w:"Entertainers", v:[2,4,1,2,2], dec:"MIDCENTURY", hook:"Answers yardage questions with riddles. Two were correct.",
+ ev:["Bob Dylan answered every yardage question with a riddle. Two of them were correct.",
+     "Bob Dylan's scorecard was just lyrics. The group agreed to count it as an 82."]},
+{n:"Catherine Bell", w:"Entertainers", v:[4,3,3,4,5], dec:"MODERN", hook:"Single-digit handicap. Takes your money politely.",
+ ev:["Catherine Bell took everyone's money politely and compared launch data on the ride home.",
+     "Catherine Bell played the round of the day and thanked YOU for the game. The hustle is complete."]},
+{n:"Madonna", w:"Entertainers", v:[2,4,3,5,2], dec:"RETRO", hook:"Two outfit changes by the turn. Pilates instructor as caddie.",
+ ev:["Madonna changed outfits twice by the turn and vogued on the tee box during your practice swings.",
+     "Madonna's Pilates-instructor caddie read the wind using methods nobody questioned."]},
+{n:"Sean Connery", w:"Entertainers", v:[5,4,3,3,4], dec:"MIDCENTURY", hook:"Took up golf for Goldfinger. Never stopped.",
+ ev:["Sean Connery insisted the match be played for something. You are still not sure what you owe him.",
+     "Sean Connery introduced himself by name on the first tee. Everyone already knew. He knew that."]},
+{n:"Jimmy Fallon", w:"Entertainers", v:[4,3,4,3,1], dec:"MODERN", hook:"Will write a song parody about your swing.",
+ ev:["Jimmy Fallon performed a song about your swing called 'Slice Slice Baby,' twice.",
+     "Jimmy Fallon laughed so hard at his own shank on 13 that play stopped for four minutes."]},
+{n:"Bob Hope", w:"Entertainers", v:[4,4,3,2,5], dec:"MIDCENTURY", hook:"A one-liner ready for every shank in the group.",
+ ev:["Bob Hope had a one-liner ready for every shank in the group, timed like a broadcast.",
+     "Bob Hope mentioned his tournament with impeccable timing, right as you missed a short one."]},
+{n:"Dolly Parton", w:"Entertainers", v:[2,4,5,2,3], dec:"RETRO", hook:"Rhinestone golf glove. Writes a song about the round.",
+ ev:["Dolly Parton rewrote 9 to 5 about your front nine by hole 12. The chorus stings but it rhymes.",
+     "Dolly Parton's rhinestone glove caught the sun on 16 and briefly blinded the group. Worth it."]},
+{n:"Willie Nelson", w:"Entertainers", v:[2,2,5,2,2], dec:"RETRO", hook:"Owns his own course. Par is whatever he says it is.",
+ ev:["Willie Nelson declared par to be whatever he said it was. On his scorecard, it was.",
+     "Willie's cart smelled like Willie's cart. Trigger rode shotgun, strapped in, no questions asked."]},
+// ---- LEGENDS / HISTORY WING ----
+{n:"Bobby Jones", w:"Legends", v:[3,4,2,3,5], dec:"PREWAR", hook:"Plus-fours, hickory, and Calamity Jane. Founded Augusta.",
+ ev:["Bobby Jones called a penalty on himself that nobody saw, and the whole group played honest for a full hole.",
+     "Bobby Jones hit hickory past your titanium on 10 and had the grace not to mention it."]},
+{n:"Al Capone", w:"Legends", v:[2,4,3,2,1], dec:"PREWAR", hook:"The seven iron in his bag is not a seven iron.",
+ ev:["Al Capone's caddie won the last three bets, coincidentally. Nobody asked follow-up questions.",
+     "Al Capone's bag rattled in a way golf bags do not. The group played fast and complimented his tempo."]},
+{n:"Winston Churchill", w:"Legends", v:[1,3,4,2,4], dec:"PREWAR", hook:"Weapons singularly ill-designed for the purpose.",
+ ev:["Winston Churchill called your clubs weapons singularly ill-designed for the purpose, then striped one and refused to enjoy it.",
+     "Winston Churchill hit double-digit cigars by the turn and negotiated a press-bet alliance against you."]},
+{n:"Amelia Earhart", w:"Legends", v:[3,2,2,5,3], dec:"PREWAR", hook:"Navigates without a yardage book. Obviously.",
+ ev:["Amelia Earhart played through weather that sent two other groups to the clubhouse.",
+     "Amelia Earhart navigated to every green without a yardage book, obviously, and beat you there."]},
+{n:"Evel Knievel", w:"Legends", v:[2,5,4,4,3], dec:"RETRO", lm:1, hook:"White jumpsuit and cape. Attempts every carry.",
+ ev:["Evel Knievel tried to drive the green on every par 4 and attempted to jump the water on 15.",
+     "Evel Knievel's cape interfered with his backswing all day. He kept the cape. Respect."]},
+{n:"Colonel Sanders", w:"Legends", v:[4,5,3,2,2], dec:"MIDCENTURY", hook:"Sneaky good. Do not let the suit fool you.",
+ ev:["Colonel Sanders was, and there is no other way to say this, sneaky good.",
+     "The Colonel's wedge slipped from his greasy grip on 11 and lodged in a pine. He played on, a vibe throughout."]},
+{n:"Babe Ruth", w:"Legends", v:[3,4,4,3,1], dec:"PREWAR", hook:"Calls his shot at the green. Points again after the shank.",
+ ev:["Babe Ruth called his shot at the green, shanked it, and pointed again anyway. The second one went in.",
+     "Babe Ruth ate 12 hotdogs at the turn and swung his 46-ounce driver like a bat all afternoon."]},
+];
+
+/* LeBron special card: not a roster row, crashes on trigger */
+const LEBRON = {n:"LeBron James", w:"SPECIAL", dec:"MODERN",
+  hook:"Crashed your foursome uninvited.",
+  card:"LeBron James crashed your foursome uninvited. He was fine today. He will be better than everyone here within 18 months and nobody wants to admit it, least of all you."};
+
+/* ============================== RECAP LIBRARY ============================== */
+const RECAP_LIB = {
+  openings:[
+    "Well, the good news first: everyone showed up on time, which nobody predicted, and the first tee had more color than a yacht regatta.",
+    "Well, this one was an unforgettable round, and not entirely for golf reasons.",
+    "The starter took one look at your group and radioed ahead. Smart man.",
+    "Good news and bad news, in that order, as is tradition.",
+    "Well, nobody got arrested, which for this particular group qualifies as a headline.",
+    "The valet saw your foursome assembling and called in backup. He was right to.",
+    "History will remember this round. The scorecard, mercifully, will not.",
+    "Your group got paired with perfect weather and used approximately none of it.",
+    "The first tee announcement ran long because two of the names required context.",
+    "By 8am the clubhouse had a rooting interest in your group. By noon it had a betting pool.",
+  ],
+  incidents:[
+    "A brief rainstorm blew through around the turn and everyone pretended not to notice.",
+    "The marshal spoke to your group twice, both times about pace, both times fairly.",
+    "Someone used a beer can as a tee on 16. The marshal chose peace.",
+    "A goose confronted your group on 7 and won.",
+    "The pin position on 12 should have required a permit.",
+    "Your group found four balls in the woods on 15. Three were yours, from previous lives.",
+    "The beverage cart made an unscheduled second lap for your group specifically.",
+    "A dog appeared on 11, adopted your group for three holes, and left with better course management than most of you.",
+    "Somebody's rangefinder said 156 and lied.",
+    "The par 3 on 8 collected two tee shots and offered nothing in return.",
+    "Play paused on 9 while everyone watched a member three fairways over have a much worse day.",
+    "The turn ran out of ice at the exact moment your group arrived. Investigations are ongoing.",
+    "A sprinkler head went off on 13 and got exactly one of you. The group agreed it chose correctly.",
+    "The group behind waved you through, then immediately regretted losing the entertainment.",
+  ],
+  signoffsHigh:["Great round.","Nice work.","Same time next Saturday."],
+  signoffsLow:["Nice work.","You will laugh about this by Tuesday.","Tell nobody what you saw on 14."],
+  turn:{
+    water:"You ordered water at the turn and the table went quiet, like you had said something political.",
+    banana:"The banana and trail mix told the group everything: you came here to post a number.",
+    hotdogAfar:"Word of your hotdog order reached Colonel Sanders, who called it 'honest work, wrong bird.'",
+    hotdogIn:"The Colonel watched you order a hotdog, said nothing, and tipped his hat with the weary respect of a man who has lost soldiers to that exact stand.",
+    beer:"You bought all the beer they had at the turn, which explains both the birdie on 12 and everything after 14.",
+  },
+  thrift:"You also left {x} points unspent, which the group respected exactly zero percent.",
+  legendBuild:"You spent nearly everything on the lesson, and it showed: Costgo fit, carrying your own bag, swinging like a dream.",
+};
+
+/* If both names land in the foursome, this beat can fire (max one per recap). */
+const PAIR_BEATS = [
+  ["Mike Trout","Tony Romo","Mike Trout spent the whole round explaining how the Eagles would crush Romo's Cowboys. Tony Romo responded with a 40-yard bomb and a smile."],
+  ["William Taft","Babe Ruth","Taft and Babe Ruth turned the turn window into a hotdog eating contest. The staff still talks about it. Nobody won. Everybody won."],
+  ["Dolly Parton","Colonel Sanders","Dolly and the Colonel held a fried chicken summit at the turn. A truce was reached. Recipes were not exchanged."],
+  ["Willie Nelson","Snoop Dogg","Willie and Snoop's cart disappeared for two holes and came back noticeably happier."],
+  ["Michael Jordan","Charles Barkley","MJ and Barkley's side bets escalated until the caddies formed a small regulatory body."],
+  ["Tom Brady","Rory McIlroy","Brady and Rory formed a two-man support group about The Match. No new members were accepted."],
+  ["Jordan Spieth","Ben Crenshaw","Spieth and Crenshaw held a Texas green-reading summit on 13 that ran longer than some legislative sessions."],
+  ["Winston Churchill","Al Capone","Churchill and Capone negotiated something in the parking lot. Nobody asked. The round improved immediately."],
+  ["Amelia Earhart","Evel Knievel","Earhart and Knievel argued the entire back nine about who takes the more direct line to the pin."],
+  ["Sean Connery","Michael Buble","Connery and Buble argued martini versus Manhattan until the turn window ran out of both."],
+  ["John F. Kennedy","Bill Clinton","JFK and Clinton compared mulligan math until both scorecards achieved diplomatic immunity."],
+  ["Bob Hope","Bill Murray","Bob Hope and Bill Murray traded one-liners for six holes. The group forgot to keep score. Correct decision."],
+];
+
+const INSTRUCTOR_BEATS = {
+  "Box Store Bob":"Box Store Bob's pre-round lesson happened in the parking lot and doubled as a timeshare pitch.",
+  "Albert Zapata":"Albert Zapata said almost nothing, fixed your grip once, and changed your life.",
+  "Tim Cup":"Tim Cup filmed your swing from four angles and emailed a recap before you reached the first tee.",
+  "Local Golf Pro":"Your local pro walked the front nine with you and said 'trust it' at exactly the right moment.",
+  "Butch Harmon":"Butch Harmon rebuilt your takeaway on the range, and you hit the three best drives of your life on the back nine.",
+  "John Daly":"John Daly's lesson was one sentence, 'grip it and rip it,' delivered mid-bite.",
+};
+const DALY_TAFT_DUEL = "John Daly and William Taft ate all the hotdogs at the turn, then challenged each other to a duel. Cooler heads prevailed, barely, and the duel was downgraded to a putting contest.";
+
+/* ============================== ENGINE ============================== */
+/* Session memory: never reuse an opening or incident until the whole pool has been heard.
+   Kills repeats during pass-the-phone demos. Resets on page reload. */
+const USED={op:new Set(), inc:new Set()};
+function pickFresh(arr, used, rng){
+  let pool=arr.filter(x=>!used.has(x));
+  if(!pool.length){used.clear(); pool=arr.slice();}
+  const x=pool[Math.floor(rng()*pool.length)];
+  used.add(x); return x;
+}
+
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function priceToAxis(p){return p>=7?5:1+(p-1)*4/3;}
+
+/* picks: {EAG:{name,price}, STY:{...}, ...}   answers: {decade, politics, playwatch, turn, EAG..COM, chirp} */
+function validateBudget(picks){
+  const cats=Object.keys(picks||{});
+  if(cats.length!==5) return {ok:false, msg:"Pick one option in every category."};
+  const spend=cats.reduce((s,k)=>s+picks[k].price,0);
+  if(spend>CONFIG.budget) return {ok:false, msg:"Over budget."};
+  return {ok:true, spend, left:CONFIG.budget-spend};
+}
+
+function runMatch(picks, answers){
+  const key=JSON.stringify([Object.keys(picks).sort().map(k=>picks[k].name), answers]);
+  const seed=hashStr(key);
+  const rng=mulberry32(seed);
+  const pick=arr=>arr[Math.floor(rng()*arr.length)];
+
+  // player vector: blend spend (trusted more) with claims
+  const player={}, weights={};
+  AXES.forEach((ax,i)=>{
+    const b=priceToAxis(picks[ax].price);
+    const q=answers[ax];
+    player[ax]=CONFIG.wBudget*b+CONFIG.wQuiz*q;
+    weights[ax]=1;
+  });
+  if(answers.playwatch==="play") weights.ATH=CONFIG.athWeightPlay;
+
+  // gate first, then score
+  let pool=CELEBS.filter(c=>!(answers.politics==="never"&&c.pol));
+  const scored=pool.map(c=>{
+    let d=0;
+    AXES.forEach((ax,i)=>{d+=weights[ax]*Math.abs(player[ax]-c.v[i]);});
+    if(c.dec===answers.decade) d-=CONFIG.decadeBonus;
+    d+=(hashStr(c.n+key)%1000)/1000*CONFIG.jitter;
+    return {c,d};
+  }).sort((a,b)=>a.d-b.d);
+
+  // curation: max one loudmouth (zero if chirp answer is 1-2), max two per wing
+  const maxLoud=answers.chirp<=2?0:1;
+  const four=[], wingCt={}; let loud=0;
+  for(const {c} of scored){
+    if(four.length===3) break;
+    if(c.lm&&loud>=maxLoud) continue;
+    if((wingCt[c.w]||0)>=2) continue;
+    four.push(c); wingCt[c.w]=(wingCt[c.w]||0)+1; if(c.lm) loud++;
+  }
+  for(const {c} of scored){ // safety fill, loudmouth cap stays hard
+    if(four.length===3) break;
+    if(four.includes(c)) continue;
+    if(c.lm&&loud>=maxLoud) continue;
+    four.push(c); if(c.lm) loud++;
+  }
+
+  const lebron=picks.EAG.price>=4&&answers.playwatch==="watch";
+
+  return {four, lebron, seed, rng, pick, key,
+          instructor:picks.EAG.name,
+          spend:AXES.reduce((s,ax)=>s+picks[ax].price,0), picks, answers};
+}
+
+function buildRecap(m){
+  const {four, answers, picks, pick, rng}=m;
+  const names=four.map(c=>c.n);
+  const parts=[pickFresh(RECAP_LIB.openings, USED.op, rng)];
+
+  // celebrity beats, one per member
+  const beats=four.map(c=>pick(c.ev));
+
+  // Daly + Taft duel is canon and overrides Taft's own beat
+  const dalyDuel=(picks.EAG.name==="John Daly"&&names.includes("William Taft"));
+  if(dalyDuel){beats[names.indexOf("William Taft")]=DALY_TAFT_DUEL;}
+  else if(INSTRUCTOR_BEATS[picks.EAG.name]&&rng()<0.85){parts.push(INSTRUCTOR_BEATS[picks.EAG.name]);}
+
+  // one pair beat max
+  const pairs=PAIR_BEATS.filter(p=>names.includes(p[0])&&names.includes(p[1]));
+  const pairBeat=pairs.length?pick(pairs)[2]:null;
+
+  // turn joke, Colonel-aware
+  let turn=RECAP_LIB.turn[answers.turn];
+  if(answers.turn==="hotdog") turn=names.includes("Colonel Sanders")?RECAP_LIB.turn.hotdogIn:RECAP_LIB.turn.hotdogAfar;
+
+  parts.push(beats[0]);
+  if(pairBeat) parts.push(pairBeat);
+  parts.push(turn, beats[1], pickFresh(RECAP_LIB.incidents, USED.inc, rng), beats[2]);
+
+  const v=validateBudget(picks);
+  if(v.left>=2) parts.push(RECAP_LIB.thrift.replace("{x}",v.left));
+  if(picks.EAG.price>=7&&picks.STY.price<=1&&picks.ATH.price<=2) parts.push(RECAP_LIB.legendBuild);
+  if(m.lebron) parts.push("Also, LeBron James showed up. Nobody invited him. See below.");
+
+  // rating: loudmouths and beer runs cost you, deterministically
+  let rating=10;
+  if(four.some(c=>c.lm)) rating-=1;
+  if(answers.turn==="beer") rating-=1;
+  if(rng()<0.5) rating-=1;
+  rating=Math.max(7,rating);
+  const signoff=pick(rating>=9?RECAP_LIB.signoffsHigh:RECAP_LIB.signoffsLow);
+  parts.push(`Overall ${rating}/10 round. ${signoff}`);
+
+  return {text:parts.join(" "), rating};
+}
+
+function playRound(picks, answers){
+  const m=runMatch(picks, answers);
+  const recap=buildRecap(m);
+  const share=`I built my dream foursome: ${m.four.map(c=>c.n).join(", ")}, and me. ${recap.rating}/10 round. ${CONFIG.title}.`;
+  return {four:m.four, lebron:m.lebron, recap:recap.text, rating:recap.rating, share, instructor:m.instructor};
+}
+
+const GAME={CONFIG,AXES,CATEGORIES,QUESTIONS,CELEBS,LEBRON,validateBudget,playRound,runMatch,buildRecap,
+  _clearUsed:()=>{USED.op.clear();USED.inc.clear();}};
+if(typeof module!=="undefined") module.exports=GAME;
+// [ENGINE-END]
+</script>
+<script>
+/* ============================== UI ============================== */
+const app=document.getElementById("app");
+let S={picks:{}, answers:{}, qi:0};
+
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800);}
+
+function screenIntro(){
+  app.innerHTML=`
+  <div class="screen">
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <div class="brand">A GOLF+ fever dream</div>
+      <h1>YOU<span style="color:var(--gold)">+3</span></h1>
+      <p class="sub" style="font-size:17px; margin-top:8px;">${GAME.CONFIG.budget} points. Five categories. Three legends and you.</p>
+      <p class="sub" style="margin-top:14px;">Spend your budget like it matters, answer ten questions like yourself, and we will assemble the celebrity foursome you actually deserve. Then you get the round recap. You always get the recap.</p>
+      <button class="btn gold" onclick="screenBudget()">Build my foursome</button>
+    </div>
+    <div class="foot">A closed-door demo. All brands lovingly parodied. No golfers were harmed.</div>
+  </div>`;
+}
+
+function spent(){return Object.values(S.picks).reduce((s,p)=>s+p.price,0);}
+
+function buildLabel(){
+  const p=S.picks; if(Object.keys(p).length<5) return "";
+  const prices=GAME.AXES.map(ax=>p[ax].price);
+  if(prices.some(x=>x>=7)) return "THE LEGEND BUILD";
+  if(Math.max(...prices)-Math.min(...prices)<=1) return "THE BALANCED BUILD";
+  if(prices.filter(x=>x<=1).length>=2&&Math.max(...prices)>=4) return "THE SPLURGE BUILD";
+  return "YOUR BUILD";
+}
+
+function screenBudget(){
+  const left=GAME.CONFIG.budget-spent();
+  app.innerHTML=`
+  <div class="screen" style="padding-top:12px;">
+    <div class="meter">
+      <div class="row"><span class="brand">Your budget</span><span class="tag" id="bl">${buildLabel()}</span></div>
+      <div class="row"><b id="pts">${left}</b><span class="tag">points left of ${GAME.CONFIG.budget}. One pick per category.</span></div>
+    </div>
+    <div id="cats"></div>
+    <button class="btn" id="go" ${Object.keys(S.picks).length===5?"":"disabled"} onclick="startQuiz()">To the questionnaire</button>
+  </div>`;
+  const cats=document.getElementById("cats");
+  GAME.CATEGORIES.forEach(cat=>{
+    const div=document.createElement("div"); div.className="cat";
+    div.innerHTML=`<h3>${cat.name}</h3><div class="why">${cat.why}</div>`;
+    const grid=document.createElement("div"); grid.className="opts";
+    cat.opts.forEach(([name,price,tier])=>{
+      const b=document.createElement("button");
+      b.className="opt"+(tier?" legend":"")+(S.picks[cat.ax]&&S.picks[cat.ax].name===name?" sel":"");
+      b.innerHTML=`<span>${tier?'<span class="legendtag">Legend tier</span>':""}${name}</span><span class="price">${price} pt${price>1?"s":""}</span>`;
+      const cur=S.picks[cat.ax]?S.picks[cat.ax].price:0;
+      if(price>GAME.CONFIG.budget-spent()+cur&&!(S.picks[cat.ax]&&S.picks[cat.ax].name===name)) b.disabled=true;
+      b.onclick=()=>{const y=window.scrollY; S.picks[cat.ax]={name,price}; screenBudget(); window.scrollTo(0,y);};
+      grid.appendChild(b);
+    });
+    div.appendChild(grid); cats.appendChild(div);
+  });
+}
+
+function startQuiz(){
+  const v=GAME.validateBudget(S.picks);
+  if(!v.ok){toast(v.msg); return;}
+  S.qi=0; S.answers={}; screenQuiz();
+}
+
+function screenQuiz(){
+  const q=GAME.QUESTIONS[S.qi];
+  const dots=GAME.QUESTIONS.map((_,i)=>`<i class="${i<=S.qi?"on":""}"></i>`).join("");
+  let body="";
+  if(q.type==="scale"){
+    body=`<div class="scale">${[1,2,3,4,5].map(n=>`<button onclick="answer('${q.id}',${n})">${n}</button>`).join("")}</div>
+    <div class="anchors"><span>${q.lo}</span><span>${q.hi}</span></div>`;
+  }else{
+    body=`<div class="mc">${q.opts.map(([label,val])=>`<button class="opt" onclick="answer('${q.id}','${val}')"><span>${label}</span></button>`).join("")}</div>`;
+  }
+  app.innerHTML=`
+  <div class="screen">
+    <div class="q-progress">${dots}</div>
+    <div class="brand">Question ${S.qi+1} of ${GAME.QUESTIONS.length}</div>
+    <h2 style="margin-top:8px;">${q.q}</h2>
+    ${body}
+  </div>`;
+}
+
+function answer(id,val){
+  S.answers[id]=val; S.qi++;
+  if(S.qi<GAME.QUESTIONS.length) screenQuiz(); else screenReveal();
+}
+
+function screenReveal(){
+  app.innerHTML=`
+  <div class="screen"><div class="reveal">
+    <div class="spinner"></div>
+    <h2>Assembling your foursome</h2>
+    <p class="sub">Checking politics gates. Capping loudmouths. Consulting the Colonel.</p>
+  </div></div>`;
+  setTimeout(screenResults,1400);
+}
+
+function screenResults(){
+  const r=GAME.playRound(S.picks,S.answers);
+  const cards=r.four.map((c,i)=>`
+    <div class="fcard" style="animation-delay:${i*0.18}s">
+      <span class="wing ${c.w}">${c.w}</span><h3>${c.n}</h3><p>${c.hook}</p>
+    </div>`).join("");
+  const lebron=r.lebron?`
+    <div class="fcard lebron" style="animation-delay:0.72s">
+      <span class="wing" style="background:var(--gold); color:var(--green);">SPECIAL</span>
+      <h3>${GAME.LEBRON.n}</h3><p>${GAME.LEBRON.card}</p>
+    </div>`:"";
+  app.innerHTML=`
+  <div class="screen">
+    <div class="brand">Your foursome</div>
+    <h2>See you on the first tee.</h2>
+    ${cards}
+    <div class="fcard you" style="animation-delay:0.54s"><span class="wing" style="background:var(--green);">You</span><h3>You</h3><p>The architect of everything that follows.</p></div>
+    ${lebron}
+    <div class="recap">
+      <h4>The round, as it happened</h4>
+      <p>${r.recap}</p>
+      <div class="rating">${r.rating}/10</div>
+    </div>
+    <div class="coach">Coached by ${r.instructor}. ${r.lebron?"Crashed by LeBron.":""}</div>
+    <button class="btn gold" onclick="share(${JSON.stringify(r.share).replace(/"/g,"&quot;")})">Share this foursome</button>
+    <button class="btn ghost" onclick="replay()">Run it back</button>
+    <div class="foot">A closed-door demo. All brands lovingly parodied.</div>
+  </div>`;
+  window.scrollTo(0,0);
+}
+
+function share(text){
+  if(navigator.share){navigator.share({text}).catch(()=>{});}
+  else if(navigator.clipboard){navigator.clipboard.writeText(text).then(()=>toast("Copied. Go brag."));}
+  else toast(text);
+}
+
+function replay(){S={picks:{},answers:{},qi:0}; screenBudget(); window.scrollTo(0,0);}
+
+screenIntro();
+</script>
+</body>
+</html>
